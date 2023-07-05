@@ -1,7 +1,6 @@
 package com.example.crud111.controller;
 
 import com.example.crud111.model.Car;
-import com.example.crud111.repository.CarRepository;
 import com.example.crud111.service.CarService;
 import com.github.dockerjava.api.exception.NotFoundException;
 import org.slf4j.Logger;
@@ -24,23 +23,15 @@ import java.util.Optional;
 @RequestMapping(path = "/control")
 public class CarController {
   public static Logger logger = (Logger) LoggerFactory.getLogger(CarController.class);
-
-  private  CarRepository carRepository;
-  public CarController(CarRepository carRepository) {
-
-    this.carRepository = carRepository;
-  }
-
   private CarService carService;
-  public CarController(CarService carService) {
+  public void CarController(CarService carService) {
     this.carService = carService;
   }
-
 
   @GetMapping("/cars/{id}")
   public ResponseEntity<Optional> getCarById(@PathVariable Long id) {
     try {
-      Optional car = carService.findById(id);
+      Optional<Car> car = carService.findById();
       if (car.isEmpty()) {
         throw new NotFoundException("Không tìm thấy id đấy");
       }
@@ -55,11 +46,11 @@ public class CarController {
   @GetMapping("/cars")
   public ResponseEntity<List<Car>> getAllCars() {
     try {
-      List<Car> cars = carService.findAll();
-      if (cars.isEmpty()) {
+      List<Car> car = carService.findAll();
+      if (car.isEmpty()) {
         throw new NotFoundException("Không có bản ghi nào");
       }
-      return ResponseEntity.ok(cars);
+      return ResponseEntity.ok(car);
     } catch (NotFoundException e) {
       return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
     } catch (Exception e) {
@@ -70,7 +61,7 @@ public class CarController {
   @PostMapping("/cars/post")
   public ResponseEntity<String> createCar(@RequestBody Car car) {
     try {
-      Car existingCar = carRepository.findById(car.getId()).orElse(null);
+      Car existingCar = (Car) carService.findById().orElse(null);
       if (existingCar != null && !existingCar.getId().equals(car.getId())) {
         throw new NotFoundException("Tên car không trùng nhau");
         }
@@ -84,7 +75,7 @@ public class CarController {
   @DeleteMapping("/cars/{id}")
   public ResponseEntity<String> deleteCarById(@PathVariable Long id) {
     try {
-      Optional<Car> car = carService.findById(id);
+      Optional<Car> car = carService.findById();
       if (car.isEmpty()) {
         throw new NotFoundException("Không tìm thấy id đấy");
       }

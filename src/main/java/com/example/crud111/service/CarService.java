@@ -7,14 +7,7 @@ import java.util.Optional;
 
 public interface CarService<T> {
 
-
-  Optional<T> findById(Long id);
-  List<T> existsByName(String carName);
-  T save(T t);
-
-  Car save(Car car);
-
-  void remove(Long id);
+  Optional<T> findById();
 
   List<Car> findAll();
 

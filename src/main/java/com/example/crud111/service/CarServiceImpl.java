@@ -7,51 +7,33 @@ import java.util.List;
 import java.util.Optional;
 
 public class CarServiceImpl implements CarService {
-  private CarRepository categoryRepository;
+  private CarRepository carRepository;
+  public void CarService(CarRepository carRepository) {
+    this.carRepository = carRepository;
+  }
 
-  public CarServiceImpl(CarRepository carRepository) {
-    
-    this.categoryRepository = carRepository;
+  private CarService carService;
+  public void CarController(CarService carService) {
+    this.carService = carService;
   }
 
   @Override
-  public Optional<Car> findById(Long id) {
-
-    return categoryRepository.findById(id);
-  }
-
-  @Override
-  public List existsByName(String carName) {
-    return null;
-  }
-
-  @Override
-  public Object save(Object o) {
-    return null;
-  }
-
-  @Override
-  public Car save(Car car) {
-    return categoryRepository.save(car);
-  }
-
-  @Override
-  public void remove(Long id) {
-    categoryRepository.deleteById(id);
+  public Optional findById() {
+   return carService.findById();
   }
 
   @Override
   public List<Car> findAll() {
-    return null;
+    return carService.findAll();
   }
 
   @Override
   public void deleteById(Long id) {
-
+    carService.deleteById(id);
   }
 
   @Override
   public void createCar(Car car) {
-
+    carService.findById();
   }
 }
