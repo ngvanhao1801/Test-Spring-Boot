@@ -1,8 +1,7 @@
-package com.example.crud111.Service;
+package com.example.crud111.service;
 
 import com.example.crud111.model.Car;
 import com.example.crud111.repository.CarRepository;
-import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,6 +16,7 @@ public class CarServiceImpl implements CarService {
 
   @Override
   public Optional<Car> findById(Long id) {
+
     return categoryRepository.findById(id);
   }
 
@@ -38,5 +38,20 @@ public class CarServiceImpl implements CarService {
   @Override
   public void remove(Long id) {
     categoryRepository.deleteById(id);
+  }
+
+  @Override
+  public List<Car> findAll() {
+    return null;
+  }
+
+  @Override
+  public void deleteById(Long id) {
+
+  }
+
+  @Override
+  public void createCar(Car car) {
+
   }
 }

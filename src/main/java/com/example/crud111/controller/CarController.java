@@ -1,16 +1,11 @@
 package com.example.crud111.controller;
 
-import com.example.crud111.Exception.CarIdNotFoundException;
-import com.example.crud111.Exception.CarNameConflictException;
-import com.example.crud111.Exception.NoFoundException;
 import com.example.crud111.model.Car;
 import com.example.crud111.repository.CarRepository;
+import com.example.crud111.service.CarService;
 import com.github.dockerjava.api.exception.NotFoundException;
-import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,37 +24,27 @@ import java.util.Optional;
 @RequestMapping(path = "/control")
 public class CarController {
   public static Logger logger = (Logger) LoggerFactory.getLogger(CarController.class);
-  private final CarRepository carRepository;
-  @Autowired
-  private ModelMapper modelMapper;
 
+  private  CarRepository carRepository;
   public CarController(CarRepository carRepository) {
+
     this.carRepository = carRepository;
   }
 
-  @GetMapping("/all")
-  public ResponseEntity<String> getAllCars() {
-    try {
-      List<Car> listCar = carRepository.findAll();
-      if (listCar.isEmpty()) {
-        throw new ChangeSetPersister.NotFoundException();
-      }
-      return ResponseEntity.ok(listCar.toString());
-    } catch (ChangeSetPersister.NotFoundException e) {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-    } catch (Exception e) {
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Không có bản ghi nào");
-    }
+  private CarService carService;
+  public CarController(CarService carService) {
+    this.carService = carService;
   }
 
+
   @GetMapping("/cars/{id}")
-  public ResponseEntity<Optional<Car>> getCarById(@PathVariable Long id) {
+  public ResponseEntity<Optional> getCarById(@PathVariable Long id) {
     try {
-      Optional<Car> listCar = carRepository.findById(id);
-      if (listCar == null) {
+      Optional car = carService.findById(id);
+      if (car.isEmpty()) {
         throw new NotFoundException("Không tìm thấy id đấy");
       }
-      return ResponseEntity.ok(listCar);
+      return ResponseEntity.ok(car);
     } catch (NotFoundException e) {
       return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
     } catch (Exception e) {
@@ -67,63 +52,120 @@ public class CarController {
     }
   }
 
-  @PostMapping("/post")
-  public ResponseEntity<String> CreateCar(@RequestBody Car car) {
+  @GetMapping("/cars")
+  public ResponseEntity<List<Car>> getAllCars() {
     try {
-      Car existingCar = carRepository.findById(car.getId()).orElse(null);
-      if (existingCar != null && !existingCar.getId().equals(car.getId())) {
-        throw new CarNameConflictException("Tên car không trùng nhau");
+      List<Car> cars = carService.findAll();
+      if (cars.isEmpty()) {
+        throw new NotFoundException("Không có bản ghi nào");
       }
-      carRepository.save(car);
-      return ResponseEntity.ok("Thành công");
-    } catch (CarNameConflictException e) {
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+      return ResponseEntity.ok(cars);
+    } catch (NotFoundException e) {
+      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
     } catch (Exception e) {
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Tên car không trùng nhau");
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
     }
   }
 
-  @PutMapping("/cars/{id}")
-  public ResponseEntity<Car> updateCategory(@PathVariable Long id,
-                                            @RequestBody Car car) {
-    Optional<Car> categoryOptional = carRepository.findById(id);
-    return categoryOptional.map(category1 -> {
-      car.setId(category1.getId());
-      return new ResponseEntity<>(carRepository.save(car), HttpStatus.OK);
-    }).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+  @PostMapping("/cars/post")
+  public ResponseEntity<String> createCar(@RequestBody Car car) {
+    try {
+      Car existingCar = carRepository.findById(car.getId()).orElse(null);
+      if (existingCar != null && !existingCar.getId().equals(car.getId())) {
+        throw new NotFoundException("Tên car không trùng nhau");
+        }
+      carService.createCar(car);
+      return ResponseEntity.ok("Thành công");
+    } catch (Exception e) {
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+    }
   }
 
   @DeleteMapping("/cars/{id}")
   public ResponseEntity<String> deleteCarById(@PathVariable Long id) {
     try {
-      Optional<Car> listCar = carRepository.findById(id);
-      if (listCar == null) {
+      Optional<Car> car = carService.findById(id);
+      if (car.isEmpty()) {
         throw new NotFoundException("Không tìm thấy id đấy");
       }
-      carRepository.deleteById(id);
+      carService.deleteById(id);
       return ResponseEntity.ok("Thành công");
     } catch (NotFoundException e) {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy id đấy");
+      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
     } catch (Exception e) {
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Không tìm thấy id đấy");
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
     }
   }
 
-  @RestControllerAdvice
-  public class GlobalExceptionHandler {
-    @ExceptionHandler(CarNameConflictException.class)
-    public ResponseEntity<String> handleCarNameConflictException(CarNameConflictException ex) {
-      return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
-    }
 
-    @ExceptionHandler(CarIdNotFoundException.class)
-    public ResponseEntity<String> handleCarIdNotFoundException(CarIdNotFoundException ex) {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
-    }
-
-    @ExceptionHandler(NoFoundException.class)
-    public ResponseEntity<String> handleNoRecordFoundException(NoFoundException ex) {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
-    }
-  }
+//  @GetMapping("/cars")
+//  public ResponseEntity<List<Car>> getAllCars() {
+//    try {
+//      List<Car> listCar = carRepository.findAll();
+//      if (listCar.isEmpty()) {
+//        throw new ChangeSetPersister.NotFoundException();
+//      }
+//      return ResponseEntity.ok(listCar);
+//    } catch (ChangeSetPersister.NotFoundException e) {
+//      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+//    } catch (Exception e) {
+//      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+//    }
+//  }
+//
+//  @GetMapping("/cars/{id}")
+//  public ResponseEntity<Optional<Car>> getCarById(@PathVariable Long id) {
+//    try {
+//      Optional<Car> listCar = carRepository.findById(id);
+//      if (listCar.isEmpty()) {
+//        throw new NotFoundException("Không tìm thấy id đấy");
+//      }
+//      return ResponseEntity.ok(listCar);
+//    } catch (NotFoundException e) {
+//      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+//    } catch (Exception e) {
+//      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+//    }
+//  }
+//
+//  @PostMapping("/post")
+//  public ResponseEntity<String> CreateCar(@RequestBody Car car) {
+//    try {
+//      Car existingCar = carRepository.findById(car.getId()).orElse(null);
+//      if (existingCar != null && !existingCar.getId().equals(car.getId())) {
+//        throw new carNameConflictException("Tên car không trùng nhau");
+//      }
+//      carRepository.save(car);
+//      return ResponseEntity.ok("Thành công");
+//    } catch (carNameConflictException e) {
+//      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+//    } catch (Exception e) {
+//      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Tên car không trùng nhau");
+//    }
+//  }
+//  @PutMapping("/cars/{id}")
+//  public ResponseEntity<Car> updateCategory(@PathVariable Long id,
+//                                            @RequestBody Car car) {
+//    Optional<Car> carOptional = carRepository.findById(id);
+//    return carOptional.map(car1 -> {
+//      car.setId(car1.getId());
+//      return new ResponseEntity<>(carRepository.save(car), HttpStatus.OK);
+//    }).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+//  }
+//
+//  @DeleteMapping("/cars/{id}")
+//  public ResponseEntity<String> deleteCarById(@PathVariable Long id) {
+//    try {
+//      Optional<Car> listCar = carRepository.findById(id);
+//      if (listCar == null) {
+//        throw new NotFoundException("Không tìm thấy id đấy");
+//      }
+//      carRepository.deleteById(id);
+//      return ResponseEntity.ok("Thành công");
+//    } catch (NotFoundException e) {
+//      return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy id đấy");
+//    } catch (Exception e) {
+//      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Không tìm thấy id đấy");
+//    }
+//  }
 }
